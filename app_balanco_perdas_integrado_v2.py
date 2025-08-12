@@ -23,8 +23,8 @@ st.markdown(r'''
 def br_money(x: float) -> str:
     return f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-def t_fmt(x: float) -> str:
-    return f"{x:,.3f}".replace(",", "X").replace(".", ",").replace("X", ".")
+def t_fmt(x: float, nd=3) -> str:
+    return f"{x:,.{nd}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 st.title("Balanço de Produção & Perdas (Neo → Bio)")
 
@@ -36,59 +36,34 @@ with st.sidebar:
     st.caption("Essas entradas alimentam a seção de Perdas Estimadas.")
 
 # ========== Seção 1: Balanço de Produção (Etanol & Vinhaça) ==========
-st.header("1) Balanço de produção de etanol e vinhaça")
-tab1, tab2 = st.tabs(["🔢 Modo por vinho (estimado)", "✍️ Modo direto (informo etanol)"])
+st.header("1) Balanço de produção de etanol e vinhaça (saídas calculadas)")
+st.caption("As três saídas abaixo (vazão de etanol, vazão de vinhaça e %Ds da vinhaça) são calculadas pelas fórmulas do Excel informadas.")
 
-with tab1:
-    st.subheader("Entradas do vinho (Neo)")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        vazao_vinho_m3h = st.number_input("Vazão do vinho (m3/h)", min_value=0.0, value=100.0, step=1.0, format="%.2f", key="t1_vazao_vinho")
-    with col2:
-        perc_ds_vinho = st.number_input("%Ds (vinho)", min_value=0.0, value=8.5, step=0.1, format="%.2f", key="t1_ds_vinho")
-    with col3:
-        conc_vinho_ww = st.number_input("Conc. vinho w/w (%)", min_value=0.0, value=14.5, step=0.1, format="%.2f", key="t1_conc_ww")
+col_in1, col_in2, col_in3, col_in4 = st.columns(4)
+with col_in1:
+    F5_vazao_vinho = st.number_input("F5 • Vazão do vinho (m³/h)", min_value=0.0, value=100.0, step=0.1, format="%.3f", key="f5")
+with col_in2:
+    F6_ds_vinho = st.number_input("F6 • %Ds do vinho (%)", min_value=0.0, value=8.5, step=0.1, format="%.3f", key="f6")
+with col_in3:
+    F7_conc_ww = st.number_input("F7 • Concentração em massa (w/w)", min_value=0.0, value=14.5, step=0.1, format="%.3f", key="f7")
+with col_in4:
+    I8_v1 = st.number_input("I8 • V1 (kgv/L etoh)", min_value=0.0, value=1.65, step=0.01, format="%.3f", key="i8")
 
-    st.markdown("—")
+# Constantes do seu cálculo
+rho_etoh = 0.789   # t/m3 (ou kg/L)
+fator_9515 = 0.9515
 
-    st.subheader("Parâmetros de conversão")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        fator_vinho_para_etanol = st.number_input("Fator vinho→etanol (m3 etanol / m3 vinho)", min_value=0.0, value=0.1931, step=0.0001, format="%.4f", key="t1_fator_vinho_etanol")
-    with c2:
-        rel_vinhaca_sobre_etanol = st.number_input("Relação vinhaça/etanol (m3/m3)", min_value=0.0, value=6.0, step=0.1, format="%.2f", key="t1_rel_vinhaca_etanol")
-    with c3:
-        perc_ds_vinhaca = st.number_input("%Ds (vinhaça)", min_value=0.0, value=7.34, step=0.01, format="%.2f", key="t1_ds_vinhaca")
+# Saídas (fórmulas do Excel)
+etanol_m3h = (F7_conc_ww / rho_etoh) / fator_9515                  # =F7/0,789/0,9515
+vinhaca_m3h = F5_vazao_vinho - F7_conc_ww + (I8_v1 * (F7_conc_ww / rho_etoh))  # =F5-F7+(I8*(F7/0,789))
+ds_vinhaca_perc = F6_ds_vinho / vinhaca_m3h                        # =F6 / (F5-F7+ (I8*(F7/0,789)) )
 
-    # Cálculos
-    etanol_m3h = vazao_vinho_m3h * fator_vinho_para_etanol
-    vinhaca_m3h = etanol_m3h * rel_vinhaca_sobre_etanol
-
-    # KPIs
-    st.markdown('<div class="grid4">', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi"><div class="title">🍷 Vinho</div><div class="value">{t_fmt(vazao_vinho_m3h)} m³/h</div><div class="aux">Conc: {t_fmt(conc_vinho_ww)}% • %Ds: {t_fmt(perc_ds_vinho)}%</div></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi"><div class="title">🍶 Etanol hidratado</div><div class="value">{t_fmt(etanol_m3h)} m³/h</div><div class="aux">Estimado via fator</div></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi"><div class="title">♨️ Vinhaça</div><div class="value">{t_fmt(vinhaca_m3h)} m³/h</div><div class="aux">%Ds: {t_fmt(perc_ds_vinhaca)}% • Relação: {t_fmt(rel_vinhaca_sobre_etanol)}</div></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi"><div class="title">🧮 Checagem</div><div class="value">{t_fmt((vinhaca_m3h/etanol_m3h) if etanol_m3h>0 else 0)} m³/m³</div><div class="aux">Vinhaça / Etanol</div></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with tab2:
-    st.subheader("Informo diretamente o etanol")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        etanol_m3h_dir = st.number_input("Etanol hidratado (m3/h)", min_value=0.0, value=19.31, step=0.01, format="%.2f", key="t2_etanol_dir")
-    with c2:
-        rel_vinhaca_sobre_etanol_dir = st.number_input("Relação vinhaça/etanol (m3/m3)", min_value=0.0, value=6.0, step=0.1, format="%.2f", key="t2_rel_vinhaca_etanol")
-    with c3:
-        perc_ds_vinhaca_dir = st.number_input("%Ds (vinhaça)", min_value=0.0, value=7.34, step=0.01, format="%.2f", key="t2_ds_vinhaca")
-
-    vinhaca_m3h_dir = etanol_m3h_dir * rel_vinhaca_sobre_etanol_dir
-
-    st.markdown('<div class="grid4">', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi"><div class="title">🍶 Etanol hidratado</div><div class="value">{t_fmt(etanol_m3h_dir)} m³/h</div><div class="aux">Direto</div></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi"><div class="title">♨️ Vinhaça</div><div class="value">{t_fmt(vinhaca_m3h_dir)} m³/h</div><div class="aux">%Ds: {t_fmt(perc_ds_vinhaca_dir)}%</div></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi"><div class="title">🧮 Relação</div><div class="value">{t_fmt(rel_vinhaca_sobre_etanol_dir)} m³/m³</div><div class="aux">Vinhaça / Etanol</div></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+# KPIs de saída
+st.markdown('<div class="grid4">', unsafe_allow_html=True)
+st.markdown(f'<div class="kpi"><div class="title">🍶 Etanol hidratado (saída)</div><div class="value">{t_fmt(etanol_m3h)} m³/h</div><div class="aux">= F7/0,789/0,9515</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="kpi"><div class="title">♨️ Vinhaça (saída)</div><div class="value">{t_fmt(vinhaca_m3h)} m³/h</div><div class="aux">= F5 - F7 + ( I8 * (F7/0,789) )</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="kpi"><div class="title">🧪 %Ds da Vinhaça (saída)</div><div class="value">{t_fmt(ds_vinhaca_perc, nd=2)} %</div><div class="aux">= F6 / Vinhaça</div></div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
@@ -133,4 +108,4 @@ st.markdown(f'<div class="kpi {tot_class}"><div class="title">💰 Total finance
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
-st.caption("Observações: • App ignora custos/margens de vapor. • Unidades de etanol (t ou m3) devem ser consistentes com o preço informado. • Fatores e relações ajustáveis.")
+st.caption("Obs.: As saídas seguem as fórmulas do Excel: Etanol = F7/0,789/0,9515; Vinhaça = F5 - F7 + ( I8*(F7/0,789) ); %Ds Vinhaça = F6 / Vinhaça. App ignora custos/margens de vapor.")
