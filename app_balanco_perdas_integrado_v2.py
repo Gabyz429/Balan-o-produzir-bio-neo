@@ -41,13 +41,13 @@ st.caption("As três saídas abaixo (vazão de etanol, vazão de vinhaça e %Ds 
 
 col_in1, col_in2, col_in3, col_in4 = st.columns(4)
 with col_in1:
-    F5_vazao_vinho = st.number_input("F5 Vazão do vinho (m³/h)", min_value=0.0, value=100.0, step=0.1, format="%.3f", key="f5")
+    F5_vazao_vinho = st.number_input("F5 • Vazão do vinho (m³/h)", min_value=0.0, value=100.0, step=0.1, format="%.3f", key="f5")
 with col_in2:
-    F6_ds_vinho = st.number_input("F6 %Ds do vinho (%)", min_value=0.0, value=8.5, step=0.1, format="%.3f", key="f6")
+    F6_ds_vinho = st.number_input("F6 • %Ds do vinho (%)", min_value=0.0, value=8.5, step=0.1, format="%.3f", key="f6")
 with col_in3:
-    F7_conc_ww = st.number_input("F7 Conc. em massa (w/w)", min_value=0.0, value=14.5, step=0.1, format="%.3f", key="f7")
+    F7_conc_ww = st.number_input("F7 • Concentração em massa (w/w)", min_value=0.0, value=14.5, step=0.1, format="%.3f", key="f7")
 with col_in4:
-    I8_v1 = st.number_input("I8 V1 (kgv/L etoh)", min_value=0.0, value=1.65, step=0.01, format="%.3f", key="i8")
+    I8_v1 = st.number_input("I8 • V1 (kgv/L etoh)", min_value=0.0, value=1.65, step=0.01, format="%.3f", key="i8")
 
 # Constantes do seu cálculo
 rho_etoh = 0.789   # t/m3 (ou kg/L)
@@ -108,4 +108,4 @@ st.markdown(f'<div class="kpi {tot_class}"><div class="title">💰 Total finance
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
-st.caption("Obs.: não foi considerado valores financeiros do vapor")
+st.caption("Obs.: As saídas seguem as fórmulas do Excel: Etanol = F7/0,789/0,9515; Vinhaça = F5 - F7 + ( I8*(F7/0,789) ); %Ds Vinhaça = F6 / Vinhaça. App ignora custos/margens de vapor.")
