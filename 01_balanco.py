@@ -2,102 +2,88 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Balanço - Vinhaça, Etanol e Financeiro", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Perdas de Produção - Óleo, DDGS e Etanol", layout="wide")
 
-st.title("📊 Balanço de Produção — Vinhaça, Etanol e Financeiro")
+st.title("PERDAS DE PRODUÇÃO ESTIMADA (sem custos/margens de vapor)")
 
 with st.sidebar:
-    st.header("Entradas do processo")
-    wine_flow_m3h = st.number_input("Vazão do vinho (m³/h)", min_value=0.0, value=100.0, step=1.0, help="Vazão enviada à destilaria")
-    etoh_mass_pct = st.number_input("Etanol no vinho (w/w, %)", min_value=0.0, max_value=100.0, value=14.5, step=0.1)
-    ds_wine_pct = st.number_input("Sólidos no vinho (w/w, %)", min_value=0.0, max_value=40.0, value=8.5, step=0.1)
-    rho_wine_t_m3 = st.number_input("Densidade do vinho (t/m³)", min_value=0.5, max_value=1.2, value=1.00, step=0.01)
+    st.header("Entradas - Operação")
+    moagem_por_dia = st.number_input("Moagem enviada (t/dia)", min_value=0.0, value=35.0, step=1.0, format="%.3f")
+    dias_bio = st.number_input("Dias em produção na Bio (dias)", min_value=0, value=25, step=1)
 
-    st.divider()
-    st.header("Produto e vapor")
-    product_type = st.selectbox("Especificação do etanol produzido", ["Hidratado 92,6 °INPM", "Anidro (100%)"])
-    rho_hydrated_t_m3 = st.number_input("Densidade etanol hidratado (t/m³)", min_value=0.75, max_value=0.90, value=0.806, step=0.001, help="Use a densidade do seu laboratório a 20 °C")
-    rho_anhydrous_t_m3 = st.number_input("Densidade etanol anidro (t/m³)", min_value=0.75, max_value=0.90, value=0.789, step=0.001)
-    vapor_basis = st.selectbox("Base do consumo de vapor (kg por litro de...)", ["etanol hidratado (produto)", "etanol absoluto (LAA)"])
-    vapor_kg_per_L = st.number_input("Consumo de vapor (kg/L)", min_value=0.0, value=1.65, step=0.05)
+    st.header("Rendimentos (por tonelada de moagem)")
+    rendimento_oleo_kgpt = st.number_input("Rendimento de óleo (kg/t)", min_value=0.0, value=19.0, step=0.1, format="%.2f")
+    rendimento_ddgs_kgpt = st.number_input("Produção de DDGS (kg/t)", min_value=0.0, value=250.0, step=1.0, format="%.1f")
 
-    st.divider()
-    st.header("Financeiro")
-    days = st.number_input("Dias de operação (d)", min_value=0, value=25, step=1)
-    hours_per_day = st.number_input("Horas por dia (h/d)", min_value=1, max_value=24, value=24, step=1)
-    price_ethanol_R_per_m3 = st.number_input("Preço do etanol (R$/m³)", min_value=0.0, value=2800.0, step=50.0, help="Digite o preço de venda do etanol")
-    cost_steam_R_per_t = st.number_input("Custo de vapor (R$/t)", min_value=0.0, value=90.0, step=5.0)
-    vinasse_density_t_m3 = st.number_input("Densidade da vinhaça (t/m³)", min_value=0.8, max_value=1.2, value=1.00, step=0.01)
+    st.header("Financeiro - Preços líquidos")
+    preco_oleo_rpt = st.number_input("Preço líquido do óleo (R$/t)", min_value=0.0, value=5000.0, step=100.0, format="%.2f")
+    preco_ddgs_rpt = st.number_input("Preço líquido do DDGS (R$/t)", min_value=0.0, value=1000.0, step=50.0, format="%.2f")
 
-# ---- Cálculos ----
-wine_mass_tph = wine_flow_m3h * rho_wine_t_m3
-etoh_mass_tph = wine_mass_tph * (etoh_mass_pct/100.0)
-ds_mass_tph = wine_mass_tph * (ds_wine_pct/100.0)
+    st.header("Produção de Etanol na Bio")
+    modo_etanol = st.radio("Como quer informar o etanol?", ["Capacidade por dia × dias", "Total direto"], index=0)
+    if modo_etanol == "Capacidade por dia × dias":
+        etanol_por_dia = st.number_input("Produção de etanol (t/dia ou m3/dia)", min_value=0.0, value=463.546, step=1.0, format="%.3f")
+        etanol_total = etanol_por_dia * dias_bio
+    else:
+        etanol_total = st.number_input("Produção total de etanol no período (t ou m3)", min_value=0.0, value=11588.666, step=1.0, format="%.3f")
 
-if product_type.startswith("Hidratado"):
-    product_mass_tph = etoh_mass_tph / 0.926  # 92,6 INPM
-    rho_prod = rho_hydrated_t_m3
-else:
-    product_mass_tph = etoh_mass_tph
-    rho_prod = rho_anhydrous_t_m3
+    preco_etanol = st.number_input("Preço líquido do etanol (R$ por t ou m3)", min_value=0.0, value=2800.0, step=50.0, format="%.2f")
 
-product_vol_m3h = product_mass_tph / rho_prod
-laa_vol_m3h = etoh_mass_tph / rho_anhydrous_t_m3  # LAA volume (absolute alcohol)
+# Cálculos
+moagem_total = moagem_por_dia * dias_bio  # t
+oleo_perdido_t = (moagem_total * (rendimento_oleo_kgpt / 1000.0))  # t
+ddgs_perdido_t = (moagem_total * (rendimento_ddgs_kgpt / 1000.0))  # t
 
-if vapor_basis.startswith("etanol hidratado"):
-    vapor_tph = vapor_kg_per_L * (product_vol_m3h * 1000.0) / 1000.0  # kg/L * L/h -> kg/h -> t/h
-else:
-    vapor_tph = vapor_kg_per_L * (laa_vol_m3h * 1000.0) / 1000.0
+valor_oleo_perdido = oleo_perdido_t * preco_oleo_rpt
+valor_ddgs_perdido = ddgs_perdido_t * preco_ddgs_rpt
+valor_etanol_produzido = etanol_total * preco_etanol
 
-vinasse_mass_tph = wine_mass_tph - product_mass_tph + vapor_tph
-vinasse_vol_m3h = vinasse_mass_tph / vinasse_density_t_m3
-vinasse_ds_pct = (ds_mass_tph / vinasse_mass_tph * 100.0) if vinasse_mass_tph > 0 else float("nan")
+financeiro_total = -valor_oleo_perdido - valor_ddgs_perdido + valor_etanol_produzido
 
-# Financeiro
-hours_total = days * hours_per_day
-ethanol_total_m3 = product_vol_m3h * hours_total
-vapor_total_t = vapor_tph * hours_total
-revenue_R = ethanol_total_m3 * price_ethanol_R_per_m3
-cost_steam_R = vapor_total_t * cost_steam_R_per_t
-gross_margin_R = revenue_R - cost_steam_R
+# Apresentação
+col1, col2 = st.columns([1.1, 1.3])
 
-# ---- Saídas ----
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Etanol (m³/h)", f"{product_vol_m3h:.2f}")
-c2.metric("Vinhaça (m³/h)", f"{vinasse_vol_m3h:.2f}")
-c3.metric("Vinhaça %DS", f"{vinasse_ds_pct:.2f}%")
-c4.metric("Vapor (t/h)", f"{vapor_tph:.2f}")
+with col1:
+    st.subheader("Moagem")
+    df_moagem = pd.DataFrame({
+        "Item": ["Moagem (t) enviada", "Produção de óleo (kg/t)", "Produção de DDGS (kg/t)"],
+        "Valor": [moagem_por_dia, rendimento_oleo_kgpt, rendimento_ddgs_kgpt],
+        "Unidade": ["t/dia", "kg/t", "kg/t"]
+    })
+    st.table(df_moagem)
 
-st.divider()
-st.subheader("Financeiro estimado")
-f1, f2, f3, f4 = st.columns(4)
-f1.metric("Receita de etanol (R$)", f"{revenue_R:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-f2.metric("Custo de vapor (R$)", f"{cost_steam_R:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-f3.metric("Margem bruta (R$)", f"{gross_margin_R:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-f4.metric("Horizonte (h)", f"{hours_total}")
+with col2:
+    st.subheader("Financeiro")
+    df_fin = pd.DataFrame({
+        "Item": [
+            "Dias em produção na Bio",
+            "Perda de produção de óleo (t)",
+            "Perda de produção de DDGS (t)",
+            "Produção de etanol (t/m3)"
+        ],
+        "Quantidade": [
+            dias_bio,
+            round(oleo_perdido_t, 3),
+            round(ddgs_perdido_t, 3),
+            round(etanol_total, 3)
+        ],
+        "Preço Líquido (R$/unid.)": ["-", preco_oleo_rpt, preco_ddgs_rpt, preco_etanol],
+        "Valor (R$)": [
+            0.0,
+            -valor_oleo_perdido,
+            -valor_ddgs_perdido,
+            valor_etanol_produzido
+        ]
+    })
+    st.table(df_fin)
 
-st.subheader("Detalhamento")
-df = pd.DataFrame({
-    "Variável": [
-        "Vazão do vinho (m³/h)", "Massa do vinho (t/h)", "Etanol no vinho (t/h)", "DS do vinho (t/h)",
-        "Produto etanol (t/h)", "Produto etanol (m³/h)",
-        "Vapor (t/h)", "Vinhaça (t/h)", "Vinhaça (m³/h)", "%DS na vinhaça"
-    ],
-    "Valor": [
-        wine_flow_m3h, wine_mass_tph, etoh_mass_tph, ds_mass_tph,
-        product_mass_tph, product_vol_m3h,
-        vapor_tph, vinasse_mass_tph, vinasse_vol_m3h, vinasse_ds_pct
-    ]
-})
-st.dataframe(df, use_container_width=True)
+st.markdown("---")
+st.subheader("TOTAL FINANCEIRO")
+st.metric(label="Resultado líquido (R$)", value=f"{financeiro_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
-with st.expander("Assunções"):
-    st.markdown(
-        ''' 
-- Conversão GL→m/m não é feita aqui; informe diretamente o **% (m/m)** de etanol no vinho.
-- Densidade do vinho assumida como 1,00 t/m³ (ajuste se tiver medição).
-- Etanol hidratado **92,6 °INPM**: massa do produto = massa de etanol/0,926.
-- O vapor consumido é somado à vinhaça (condensado/arraste).
-- A parte financeira considera **apenas** receita de etanol e custo de vapor (coloque seus preços reais).
-        '''
-    )
+st.caption(
+    """Notas:
+- Este app ignora custos/margens de vapor, como solicitado.
+- Unidades de etanol (t ou m3) devem ser consistentes com o preço informado.
+- Ajuste os preços líquidos conforme seus valores reais de venda."""
+)
