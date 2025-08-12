@@ -76,7 +76,7 @@ vinhaca_m3h_formula = F5_vazao_vinho - F7_conc_ww + (I8_v1 * (F7_conc_ww / rho_e
 vinhaca_m3h = vinhaca_m3h_formula
 # %Ds da vinhaça = F6 / (F5 - F7 + I8*(F7/0,789))  → é fração. Para exibir, multiplicamos por 100.
 ds_vinhaca_frac = F6_ds_vinho / vinhaca_m3h if vinhaca_m3h else 0.0
-ds_vinhaca_percent = ds_vinhaca_frac * 100.0 * 100.0
+ds_vinhaca_percent = ds_vinhaca_frac * 100.0 * 10.0
 
 horas_periodo = 24 * dias_bio
 etanol_total_periodo = etanol_m3h * horas_periodo  # m3 no período
