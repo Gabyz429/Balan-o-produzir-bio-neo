@@ -105,8 +105,8 @@ with col_left:
 
 with col_right:
     moagem_total = moagem_por_dia * dias_bio
-    oleo_perdido_t = (moagem_total * (rendimento_oleo_kgpt / 1000.0))
-    ddgs_perdido_t = (moagem_total * (rendimento_ddgs_kgpt / 1000.0))
+    oleo_perdido_t = (moagem_total * (rendimento_oleo_kgpt / 1000.0) * horas_periodo )
+    ddgs_perdido_t = (moagem_total * (rendimento_ddgs_kgpt / 1000.0) * horas_periodo)
 
     valor_oleo_perdido = oleo_perdido_t * preco_oleo_rpt
     valor_ddgs_perdido = ddgs_perdido_t * preco_ddgs_rpt
@@ -114,8 +114,8 @@ with col_right:
     financeiro_total = -valor_oleo_perdido - valor_ddgs_perdido + valor_etanol_produzido
 
     st.markdown('<div class="grid4">', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi negative"><div class="title">🛢️ Perda de Óleo</div><div class="value">{t_fmt(oleo_perdido_t)} t</div><div class="aux">{br_money(-valor_oleo_perdido)}</div></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="kpi negative"><div class="title">🌾 Perda de DDGS</div><div class="value">{t_fmt(ddgs_perdido_t)} t</div><div class="aux">{br_money(-valor_ddgs_perdido)}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi negative"><div class="title">🛢️ Perda de Óleo (período) </div><div class="value">{t_fmt(oleo_perdido_t)} t</div><div class="aux">{br_money(-valor_oleo_perdido)}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi negative"><div class="title">🌾 Perda de DDGS (período) </div><div class="value">{t_fmt(ddgs_perdido_t)} t</div><div class="aux">{br_money(-valor_ddgs_perdido)}</div></div>', unsafe_allow_html=True)
     st.markdown(f'<div class="kpi positive"><div class="title">🍶 Etanol produzido (período)</div><div class="value">{t_fmt(etanol_total_periodo)} m³</div><div class="aux">{br_money(valor_etanol_produzido)}</div></div>', unsafe_allow_html=True)
     klass = "positive" if financeiro_total >= 0 else "negative"
     st.markdown(f'<div class="kpi {klass}"><div class="title">💰 Total financeiro</div><div class="value">{br_money(financeiro_total)}</div><div class="aux">= −Óleo −DDGS + Etanol</div></div>', unsafe_allow_html=True)
