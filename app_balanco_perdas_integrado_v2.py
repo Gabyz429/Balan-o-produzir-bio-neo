@@ -67,21 +67,24 @@ with col_in4:
 rho_etoh = 0.789
 fator_9515 = 0.9515
 
-# IMPORTANTE: Etanol é saída = (F5 * F7%) / 0,789 / 0,9515  (usa vazão de vinho e a concentração em massa)
+# Etanol usa F5 * F7%
 etanol_m3h = (F5_vazao_vinho * (F7_conc_ww/100.0)) / rho_etoh / fator_9515
-# Vinhaça = F5 − F7 + I8 × (F7/0,789) — aqui F7 do Excel é o termo de massa; como você informa %, uso (F5*%)
 F7_massa_equivalente = F5_vazao_vinho * (F7_conc_ww/100.0)
-vinhaca_m3h = F5_vazao_vinho - F7_massa_equivalente + (I8_v1 * (F7_massa_equivalente / rho_etoh))
-# %Ds da vinhaça = F6 / Vinhaça
-ds_vinhaca_perc = F6_ds_vinho / vinhaca_m3h if vinhaca_m3h else 0.0
+# Vinhaça conforme sua equação original (com F7 "direto"):
+vinhaca_m3h_formula = F5_vazao_vinho - F7_conc_ww + (I8_v1 * (F7_conc_ww / rho_etoh))
+# Para consistência, mantenho a card principal usando essa fórmula:
+vinhaca_m3h = vinhaca_m3h_formula
+# %Ds da vinhaça = F6 / (F5 - F7 + I8*(F7/0,789))  → é fração. Para exibir, multiplicamos por 100.
+ds_vinhaca_frac = F6_ds_vinho / vinhaca_m3h if vinhaca_m3h else 0.0
+ds_vinhaca_percent = ds_vinhaca_frac * 100.0
 
 horas_periodo = 24 * dias_bio
 etanol_total_periodo = etanol_m3h * horas_periodo  # m3 no período
 
 st.markdown('<div class="grid3">', unsafe_allow_html=True)
 st.markdown(f'<div class="kpi teal"><div class="title">🍶 Etanol hidratado (saída)</div><div class="value">{t_fmt(etanol_m3h)} m³/h</div><div class="aux">(F5×F7%%)/0,789/0,9515</div></div>', unsafe_allow_html=True)
-st.markdown(f'<div class="kpi amber"><div class="title">♨️ Vinhaça (saída)</div><div class="value">{t_fmt(vinhaca_m3h)} m³/h</div><div class="aux">F5 − (F5×F7%%) + I8×((F5×F7%%)/0,789)</div></div>', unsafe_allow_html=True)
-st.markdown(f'<div class="kpi teal"><div class="title">🧪 %Ds da Vinhaça (saída)</div><div class="value">{t_fmt(ds_vinhaca_perc, nd=2)} %</div><div class="aux">F6 / Vinhaça</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="kpi amber"><div class="title">♨️ Vinhaça (saída)</div><div class="value">{t_fmt(vinhaca_m3h)} m³/h</div><div class="aux">F5 − F7 + I8×(F7/0,789)</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="kpi teal"><div class="title">🧪 %Ds da Vinhaça (saída)</div><div class="value">{t_fmt(ds_vinhaca_percent, nd=2)} %</div><div class="aux">F6 / (F5 − F7 + I8×(F7/0,789))</div></div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -120,4 +123,4 @@ with col_right:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-st.caption("Obs.: Etanol, Vinhaça e %Ds da Vinhaça são saídas calculadas das entradas F5, F6, F7 e I8. Etanol = (F5×F7%%)/0,789/0,9515.")
+st.caption("Obs.: %Ds exibido como porcentagem (fração × 100). Etanol = (F5×F7%%)/0,789/0,9515. Vinhaça = F5 − F7 + I8×(F7/0,789).")
