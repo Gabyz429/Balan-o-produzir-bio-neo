@@ -108,4 +108,4 @@ st.markdown(f'<div class="kpi {tot_class}"><div class="title">💰 Total finance
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
-st.caption("Obs.: As saídas seguem as fórmulas do Excel: Etanol = F7/0,789/0,9515; Vinhaça = F5 - F7 + ( I8*(F7/0,789) ); %Ds Vinhaça = F6 / Vinhaça. App ignora custos/margens de vapor.")
+st.caption("Obs.: não foi considerado valores financeiros do vapor")
